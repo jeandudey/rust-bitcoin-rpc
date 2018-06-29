@@ -1,0 +1,19 @@
+[package]
+name = "bitcoin-rpc"
+version = "0.1.2"
+authors = ["Jean Pierre De Jesus Dudey Diaz <jeandudey@hotmail.com>"]
+repository = "https://github.com/jeandudey/bitcoin-rpc.git"
+homepage = "https://github.com/jeandudey/bitcoin-rpc.git"
+license = "GPL-3.0"
+readme = "README.md"
+documentation = "http://jeandudey.github.io/bitcoin-rpc/"
+description = "Bitcoin Rpc API client for rust."
+
+[lib]
+name = "bitcoinrpc"
+path = "src/lib.rs"
+
+[dependencies]
+jsonrpc-v1 = "0.1.0"
+strason = "0.3"
+serde = "0.6"
