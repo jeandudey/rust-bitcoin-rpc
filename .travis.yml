@@ -1,40 +1,6 @@
 language: rust
 rust:
-- beta
-- stable
-matrix:
-allow_failures:
-- rust: nightly
-before_script:
-- ! 'pip install ''travis-cargo<0.2'' --user &&
-
-  export PATH=$HOME/.local/bin:$PATH
-
-'
-- sudo apt-add-repository ppa:bitcoin/bitcoin -y
-- sudo apt-get update -qq
-- sudo apt-get install bitcoind -y
-- bitcoind -testnet -rpcuser=user -rpcpassword=pass -daemon
-script:
-- ! 'travis-cargo build &&
-
-  travis-cargo test &&
-
-  travis-cargo --only stable doc
-
-'
-addons:
-  apt:
-    packages:
-    - libcurl4-openssl-dev
-    - libelf-dev
-    - libdw-dev
-after_success:
-- travis-cargo --only stable doc-upload
-- travis-cargo coveralls --no-sudo
-notifications:
-  email:
-    on_success: never
-env:
-  global:
-    secure: O2Y8ARyOQ5+HkbWZuORrYkdKi7V3r5nLoK7JV26b4sjHgVkqkCbjEOQ0+qIi1rq8FHTQGo5Q70U61VPrmwERhoBJtg9Fch3sWiCTehUODbgFZf0YGAsCv68BYl1UrMzz7WI1wFHXojvhMdQECSuL54q03aLeVk5p+TRnC/MXGQ9JFVk+iNz0g+v/jtLuN86rVhpRd8POEqLAmk3KNpy1GIyhxhmQcYkYgBo93QtpJrq0wDiHKp52V4oEf2v+vvovPCL09xheRtyUJg1z5vzXLkkmNmJxhqy3H7TskSHa4oLBoeZ0/3vNTG0hlA9mvku2KexsKFT/4EG5EIj7d/lS1VXjrIkRUlBfxFUVaqiI59f2K1FGrneA1FuPrWc7IXuiwyeCUW+NLN9pFZXN5qMLAM1wutmjuRT/QfRCBWo99ECR4OHA/k5ukMr53pwqckOeysrL1vz83019wmi6jNXg6dNAMvormNsJsGlBYPEgc9XLzdrmL5+Otr4iWspHVlUFcaObrjJNFpclzWBHChF+oXgO+aEdranLGjwhYHeQ2kAMqJuPXCZ5OFIDv1v5AI4pii+bMLbEM1T0WCVFU9aVWsmrj4Kpf27Fpe8LW9+s52kVytVFIxHUwmN3TumtJMEStZJRLQgJOFJ7AQVKBNQna0Pygji4lhj2/A6Z46UZPyg=
+  - beta
+  - stable
+  - nightly
+  - 1.15.0
