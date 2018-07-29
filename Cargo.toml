@@ -18,4 +18,3 @@ strason = "0.4"
 [dependencies.bitcoin-amount]
 git = "https://github.com/jeandudey/rust-bitcoin-amount"
 version = "0.1"
-features = ["serde_json_number"]
