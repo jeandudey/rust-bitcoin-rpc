@@ -30,7 +30,7 @@ impl BitcoinRpc {
 
     /// Get the estimated fee per kB for a transaction.
     ///
-    /// The parameter specifies how many blocks a transaction should wait to
+    /// The parameter specifies how many blocks a transaction may wait to
     /// be included in a block. It SHOULD be between 2 and 25.
     ///
     /// # Panics
@@ -59,7 +59,7 @@ impl BitcoinRpc {
 
         if let Some(btc) = res.num() {
             let amt = Amount::from_str(btc)
-                .map_err(|e| Error::new(e.into(), "invalid fee"))?;
+                .map_err(|e| Error::new(e.into(), "fee isn't a valid number"))?;
 
             if amt < Amount::zero() {
                 return Err(Error::new(ErrorKind::Daemon,
