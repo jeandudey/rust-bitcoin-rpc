@@ -13,8 +13,6 @@ use std::str::FromStr;
 use jsonrpc::client::Client;
 use strason::Json;
 
-use bitcoin_amount::Amount;
-
 macro_rules! rpc_method {
     (
         $(#[$outer:meta])*
@@ -53,48 +51,28 @@ impl BitcoinRpc {
         BitcoinRpc { client: Client::new(url, user, pass) }
     }
 
-    /// Get the estimated fee per kB for a transaction.
-    ///
-    /// The parameter specifies how many blocks a transaction may wait to
-    /// be included in a block. It SHOULD be between 2 and 25.
-    ///
-    /// # Panics
-    ///
-    /// If the `blocks` parameter isn't between 2 and 25.
-    pub fn estimatefee(&self, blocks: u8) -> Result<Amount, Error> {
-        assert!(blocks >= 2 && blocks <= 25, "`blocks` is out of range");
-
-        let request = self.client.build_request("estimatefee".to_string(),
-                                                vec![]);
+    pub fn estimatesmartfee<E>(
+        &self,
+        conf_target: u16,
+        estimate_mode: E,
+    ) -> Result<EstimateSmartFee, Error>
+    where E:
+          Into<Option<EstimateMode>>
+    {
+        let mut params = Vec::new();
+        params.push(Json::from_serialize(conf_target).unwrap());
+        if let Some(estimate_mode) = estimate_mode.into() {
+            params.push(Json::from_serialize(estimate_mode).unwrap())
+        }
+        let request = self.client.build_request("estimatesmartfee".to_string(),
+                                                params);
         let response = self.client.send_request(&request)
             .map_err(|e| Error::new(e.into(), "RPC error"))?;
 
-        if let Some(e) = response.error {
-            let kind = jsonrpc::Error::Rpc(e).into();
-            return Err(Error::new(kind, "JSON-RPC error"));
-        }
+        let v: EstimateSmartFee = response.into_result()
+            .map_err(|e| Error::new(e.into(), "Malformed response"))?;
 
-        let res = match response.result {
-            Some(res) => res,
-            None => {
-                let kind = jsonrpc::Error::NoErrorOrResult.into();
-                return Err(Error::new(kind, "JSON-RPC response error"))
-            },
-        };
-
-        if let Some(btc) = res.num() {
-            let amt = Amount::from_str(btc)
-                .map_err(|e| Error::new(e.into(), "fee isn't a valid number"))?;
-
-            if amt < Amount::zero() {
-                return Err(Error::new(ErrorKind::Daemon,
-                                      "invalid fee"));
-            }
-
-            return Ok(amt)
-        }
-
-        Err(Error::new(ErrorKind::Daemon, "fee is not a number"))
+        Ok(v)
     }
 
     rpc_method!(pub fn getnetworkinfo(&self) -> RpcResult<NetworkInfo>);
@@ -266,4 +244,92 @@ pub struct Network {
     pub reachable: bool,
     pub proxy: String,
     pub proxy_randomize_credentials: bool,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct EstimateSmartFee {
+    /// Estimate fee rate in BTC/kB.
+    pub feerate: Json,
+    /// Errors encountered during processing.
+    pub errors: Vec<String>,
+    /// Block number where estimate was found.
+    pub blocks: i64,
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub enum EstimateMode {
+    Unset,
+    Economical,
+    Conservative,
+}
+
+impl FromStr for EstimateMode {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "UNSET" => Ok(EstimateMode::Unset),
+            "ECONOMICAL" => Ok(EstimateMode::Economical),
+            "CONSERVATIVE" => Ok(EstimateMode::Conservative),
+            _ => Err(Error::new(ErrorKind::Other, "invalid network name")),
+        }
+    }
+}
+
+impl<'de> serde::de::Deserialize<'de> for EstimateMode {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::de::Deserializer<'de>,
+    {
+        struct Visitor;
+
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = EstimateMode;
+
+            fn expecting(&self, fmt: &mut Formatter) -> fmt::Result {
+                write!(fmt, "estimate mode")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                EstimateMode::from_str(v)
+                    .map_err(serde::de::Error::custom)
+            }
+
+            fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                EstimateMode::from_str(v)
+                    .map_err(serde::de::Error::custom)
+            }
+
+            fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                EstimateMode::from_str(&*v)
+                    .map_err(serde::de::Error::custom)
+            }
+        }
+
+        deserializer.deserialize_str(Visitor)
+    }
+}
+
+impl serde::ser::Serialize for EstimateMode {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        let s = match *self {
+            EstimateMode::Unset => "UNSET",
+            EstimateMode::Economical => "ECONOMICAL",
+            EstimateMode::Conservative => "CONSERVATIVE",
+        };
+
+        serializer.serialize_str(s)
+    }
 }
