@@ -14,7 +14,4 @@ jsonrpc = { version = "0.9", path = "rust-jsonrpc/" }
 serde = "1"
 serde_derive = "1"
 strason = "0.4"
-
-[dependencies.bitcoin-amount]
-git = "https://github.com/jeandudey/rust-bitcoin-amount"
-version = "0.1"
+bitcoin-amount = "0.1"
