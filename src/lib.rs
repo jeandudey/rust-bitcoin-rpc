@@ -9,13 +9,13 @@ extern crate bitcoin_amount;
 
 use std::str::FromStr;
 
-use jsonrpc::client::Client as RpcClient;
+use jsonrpc::client::Client;
 
 use bitcoin_amount::Amount;
 
 /// A Handle to a Bitcoin JSON-RPC connection
 pub struct BitcoinRpc {
-    client: RpcClient,
+    client: Client,
 }
 
 impl BitcoinRpc {
@@ -25,7 +25,7 @@ impl BitcoinRpc {
         // around is ok.
         debug_assert!(pass.is_none() || user.is_some());
 
-        BitcoinRpc { client: RpcClient::new(String::from(url), user, pass) }
+        BitcoinRpc { client: Client::new(String::from(url), user, pass) }
     }
 
     /// Get the estimated fee per kB for a transaction.
