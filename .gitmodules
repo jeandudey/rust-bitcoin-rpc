@@ -1,3 +1,0 @@
-[submodule "rust-jsonrpc"]
-	path = rust-jsonrpc
-	url = https://github.com/jeandudey/rust-jsonrpc/

@@ -10,7 +10,7 @@ documentation = "https://docs.rs/bitcoin-rpc"
 description = "Bitcoin JSON-RPC client."
 
 [dependencies]
-jsonrpc = { version = "0.9", path = "rust-jsonrpc/" }
+jsonrpc = "0.9"
 serde = "1"
 serde_derive = "1"
 strason = "0.4"
