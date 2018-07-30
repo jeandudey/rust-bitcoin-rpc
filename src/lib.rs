@@ -20,12 +20,12 @@ pub struct BitcoinRpc {
 
 impl BitcoinRpc {
     /// Creates a client to a bitcoind JSON-RPC server.
-    pub fn new(url: &str, user: Option<String>, pass: Option<String>) -> Self {
+    pub fn new(url: String, user: Option<String>, pass: Option<String>) -> Self {
         // Check that if we have a password, we have a username; other way
         // around is ok.
         debug_assert!(pass.is_none() || user.is_some());
 
-        BitcoinRpc { client: Client::new(String::from(url), user, pass) }
+        BitcoinRpc { client: Client::new(url, user, pass) }
     }
 
     /// Get the estimated fee per kB for a transaction.
