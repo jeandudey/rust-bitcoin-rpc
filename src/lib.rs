@@ -83,6 +83,8 @@ impl BitcoinRpc {
         Ok(v)
     }
 
+    rpc_method!(pub fn getconnectioncount(&self) -> RpcResult<u64>);
+    rpc_method!(pub fn ping(&self) -> RpcResult<()>);
     rpc_method!(pub fn getnetworkinfo(&self) -> RpcResult<net::NetworkInfo>);
 }
 
