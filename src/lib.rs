@@ -139,19 +139,32 @@ impl From<bitcoin_amount::ParseAmountError> for ErrorKind {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct NetworkInfo {
+    /// The server version
     pub version: i64,
+    /// The server subversion string
     pub subversion: String,
+    /// The protocol version
     pub protocolversion: i64,
-    // XXX: Add an special type for this?
-    pub localservices: String,
+    /// The services we offer to the network
+    pub localservices: Option<String>,
+    /// `true` if transaction relay is requested from peers
     pub localrelay: bool,
+    /// The time offset
     pub timeoffset: i64,
-    pub networkactive: bool,
-    pub connections: i64,
-    pub networks: Option<Vec<Network>>,
+    /// Wheter p2p networking is enabled
+    pub networkactive: Option<bool>,
+    /// The number of connections
+    pub connections: Option<i64>,
+    /// Information per network
+    pub networks: Vec<Network>,
+    /// Minimum relay fee for transactions in BTC/kB
     pub relayfee: Json,
+    /// Minimum fee increment for mempool limiting or BIP 125 replacement in
+    /// BTC/kB
     pub incrementalfee: Json,
-    pub localaddresses: Json,
+    /// List of local addresses
+    pub localaddresses: Vec<LocalAddress>,
+    /// Any network and blockchain warnings
     pub warnings: String,
 }
 
@@ -237,13 +250,29 @@ impl serde::ser::Serialize for NetworkName {
     }
 }
 
+/// Network information
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Network {
+    /// The name
     pub name: NetworkName,
+    /// Is the network limited using `-onlynet`?
     pub limited: bool,
+    /// Is the network reachable?
     pub reachable: bool,
+    /// The proxy that is used for this network
     pub proxy: String,
+    /// Whether randomized credentials are used
     pub proxy_randomize_credentials: bool,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct LocalAddress {
+    /// Network address
+    pub address: String,
+    /// Network port
+    pub port: u16,
+    /// Relative score
+    pub score: i64,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
