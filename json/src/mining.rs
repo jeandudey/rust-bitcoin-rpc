@@ -6,8 +6,6 @@ use std::str::FromStr;
 use serde::{de, ser};
 use strason::Json;
 
-use {Error, ErrorKind};
-
 /// Models the result of "estimatesmartfee"
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct EstimateSmartFee {
@@ -27,14 +25,14 @@ pub enum EstimateMode {
 }
 
 impl FromStr for EstimateMode {
-    type Err = Error;
+    type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "UNSET" => Ok(EstimateMode::Unset),
             "ECONOMICAL" => Ok(EstimateMode::Economical),
             "CONSERVATIVE" => Ok(EstimateMode::Conservative),
-            _ => Err(Error::new(ErrorKind::Other, "invalid network name")),
+            _ => Err(()),
         }
     }
 }
@@ -58,7 +56,7 @@ impl<'de> de::Deserialize<'de> for EstimateMode {
                 E: de::Error,
             {
                 EstimateMode::from_str(v)
-                    .map_err(de::Error::custom)
+                    .map_err(|_e| de::Error::custom("invalid string"))
             }
 
             fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
@@ -66,7 +64,7 @@ impl<'de> de::Deserialize<'de> for EstimateMode {
                 E: de::Error,
             {
                 EstimateMode::from_str(v)
-                    .map_err(de::Error::custom)
+                    .map_err(|_e| de::Error::custom("invalid string"))
             }
 
             fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
@@ -74,7 +72,7 @@ impl<'de> de::Deserialize<'de> for EstimateMode {
                 E: de::Error,
             {
                 EstimateMode::from_str(&*v)
-                    .map_err(de::Error::custom)
+                    .map_err(|_e| de::Error::custom("invalid string"))
             }
         }
 

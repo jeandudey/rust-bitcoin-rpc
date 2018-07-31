@@ -1,17 +1,16 @@
 extern crate jsonrpc;
 
 extern crate serde;
-#[macro_use]
-extern crate serde_derive;
 extern crate strason;
+
+extern crate bitcoin_rpc_json;
 
 use std::fmt::{self, Display, Formatter};
 
 use jsonrpc::client::Client;
 use strason::Json;
 
-pub mod net;
-pub mod mining;
+use bitcoin_rpc_json::*;
 
 macro_rules! rpc_request {
     ($client:expr, $name:expr, $params:expr) => {

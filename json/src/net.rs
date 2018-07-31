@@ -6,8 +6,6 @@ use std::str::FromStr;
 use serde::{de, ser};
 use strason::Json;
 
-use {Error, ErrorKind};
-
 /// The result of "getnetworkinfo"
 #[derive(Debug, Deserialize, Serialize)]
 pub struct NetworkInfo {
@@ -52,14 +50,14 @@ pub enum NetworkName {
 }
 
 impl FromStr for NetworkName {
-    type Err = Error;
+    type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "ipv4" => Ok(NetworkName::Ipv4),
             "ipv6" => Ok(NetworkName::Ipv6),
             "onion" => Ok(NetworkName::Onion),
-            _ => Err(Error::new(ErrorKind::Other, "invalid network name")),
+            _ => Err(()),
         }
     }
 }
@@ -83,7 +81,7 @@ impl<'de> de::Deserialize<'de> for NetworkName {
                 E: de::Error,
             {
                 NetworkName::from_str(v)
-                    .map_err(de::Error::custom)
+                    .map_err(|_e| de::Error::custom("invalid string"))
             }
 
             fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
@@ -91,7 +89,7 @@ impl<'de> de::Deserialize<'de> for NetworkName {
                 E: de::Error,
             {
                 NetworkName::from_str(v)
-                    .map_err(de::Error::custom)
+                    .map_err(|_e| de::Error::custom("invalid string"))
             }
 
             fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
@@ -99,7 +97,7 @@ impl<'de> de::Deserialize<'de> for NetworkName {
                 E: de::Error,
             {
                 NetworkName::from_str(&*v)
-                    .map_err(de::Error::custom)
+                    .map_err(|_e| de::Error::custom("invalid string"))
             }
         }
 
