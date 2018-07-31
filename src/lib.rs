@@ -1,14 +1,27 @@
+// Copyright 2018 Jean Pierre Dudey <jeandudey@hotmail.com>
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
 extern crate jsonrpc;
 
 extern crate serde;
 extern crate strason;
 
+extern crate bitcoin;
 extern crate bitcoin_rpc_json;
 
 use std::fmt::{self, Display, Formatter};
 
 use jsonrpc::client::Client;
 use strason::Json;
+
+use bitcoin::blockdata::transaction::Transaction;
+use bitcoin::network::serialize as bitcoin_ser;
+use bitcoin::util::hash::Sha256dHash;
 
 use bitcoin_rpc_json::*;
 
@@ -58,6 +71,8 @@ impl BitcoinRpc {
         BitcoinRpc { client: Client::new(url, user, pass) }
     }
 
+    // mining
+
     pub fn estimatesmartfee<E>(
         &self,
         conf_target: u16,
@@ -82,9 +97,41 @@ impl BitcoinRpc {
         Ok(v)
     }
 
+    // net
+    
     rpc_method!(pub fn getconnectioncount(&self) -> RpcResult<u64>);
     rpc_method!(pub fn ping(&self) -> RpcResult<()>);
     rpc_method!(pub fn getnetworkinfo(&self) -> RpcResult<net::NetworkInfo>);
+
+    // rawtransaction
+
+    pub fn sendrawtransaction<A>(
+        &self,
+        tx: &Transaction,
+        allowhighfees: A,
+    ) -> Result<Sha256dHash, Error>
+    where A:
+          Into<Option<bool>>
+    {
+        let rawtx = bitcoin_ser::serialize_hex(&tx).unwrap();
+
+        let mut params = Vec::new();
+        params.push(Json::from_serialize(rawtx).unwrap());
+        if let Some(allowhighfees) = allowhighfees.into() {
+            params.push(Json::from_serialize(allowhighfees).unwrap())
+        }
+
+        let response = rpc_request!(&self.client,
+                                    "sendrawtransaction".to_string(),
+                                    params);
+
+        let v: String = response.into_result()
+            .map_err(|e| Error::new(e.into(), "Malformed response"))?;
+        // TODO: unwrap
+        let v = Sha256dHash::from_hex(&*v).unwrap();
+
+        Ok(v)
+    }
 }
 
 /// The error type for bitcoin JSON-RPC operations.

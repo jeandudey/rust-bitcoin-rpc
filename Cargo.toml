@@ -2,15 +2,21 @@
 name = "bitcoin-rpc"
 version = "0.2.0"
 authors = ["Jean Pierre Dudey <jeandudey@hotmail.com>"]
-repository = "https://github.com/jeandudey/bitcoin-rpc"
-homepage = "https://github.com/jeandudey/bitcoin-rpc"
-license = "Apache-2.0/MIT"
-readme = "README.md"
-documentation = "https://docs.rs/bitcoin-rpc"
 description = "Bitcoin JSON-RPC client."
+documentation = "https://docs.rs/bitcoin-rpc"
+homepage = "https://github.com/jeandudey/rust-bitcoin-rpc"
+repository = "https://github.com/jeandudey/rust-bitcoin-rpc"
+readme = "README.md"
+keywords = ["bitcoin", "cryptocurrency", "jsonrpc", "rpc", "bitcoin-rpc"]
+categories = ["network"]
+license = "Apache-2.0/MIT"
+
+[badges]
+travis-ci = { repository = "jeandudey/rust-bitcoin-rpc", branch = "master" }
 
 [dependencies]
 jsonrpc = "0.9"
 serde = "1"
 strason = "0.4"
+bitcoin = "0.13"
 bitcoin-rpc-json = { version = "0.1", path = "json/" }

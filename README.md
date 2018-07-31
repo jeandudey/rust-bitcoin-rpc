@@ -5,7 +5,17 @@
   </a>
 
   <a href="https://crates.io/crates/bitcoin-rpc">
-    <img src="https://img.shields.io/crates/v/bitcoin-rpc.svg?maxAge=2592000" alt="Crates.io Version">
+    <img src="https://img.shields.io/crates/l/bitcoin-rpc.svg" alt="LicenseLicense">
+    </img>
+  </a>
+
+  <a href="https://crates.io/crates/bitcoin-rpc">
+    <img src="https://img.shields.io/crates/v/bitcoin-rpc.svg" alt="Crates.io Version">
+    </img>
+  </a>
+
+  <a href="https://docs.rs/bitcoin-rpc">
+    <img src="https://docs.rs/bitcoin-rpc/badge.svg" alt="Docs.rs">
     </img>
   </a>
 
@@ -19,15 +29,28 @@
 </p>
 
 # Bitcoin RPC
-This crate implements an Bitcoin JSON-RPC client in rust, this cate doesn't
-intends to be a complete implementation of all the bitcoin rpc methods so if you
-need some method you can create a pull request for it.
+
+Bitcoin JSON-RPC client implementation in Rust.
+
+*This crate is not yet very stable, be careful.*
+
+## Overview
+
+*bitcoin-rpc* is a fast, safe JSON-RPC 2.0 client written in Rust.
+
+*bitcoin-rpc* offers secure bitcoin money handling, using `strason`.
+
+Be aware that this crate is not a complete implementation of all bitcoin
+JSON-RPC methods available. This is due to the large effort needed to implement
+all methods. If you need a method implemented feel free to open an issue or send
+a Pull Request.
 
 ## Usage
 Add the dependency to your `Cargo.toml`:
+
 ```toml
 [dependencies]
-bitcoin-rpc = "0.2"
+bitcoin-rpc = { git = "https://github.com/jeandudey/rust-bitcoin-rpc" }
 ```
 
 And this to your crate root:
