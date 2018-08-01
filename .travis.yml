@@ -3,4 +3,3 @@ rust:
   - beta
   - stable
   - nightly
-  - 1.17.0
