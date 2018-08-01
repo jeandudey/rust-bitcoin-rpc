@@ -1,11 +1,11 @@
 <p align="center">
-  <a href="https://travis-ci.org/jeandudey/bitcoin-rpc">
-    <img src="https://travis-ci.org/jeandudey/bitcoin-rpc.svg?branch=master" alt="Build Status">
+  <a href="https://travis-ci.org/jeandudey/rust-bitcoin-rpc">
+    <img src="https://travis-ci.org/jeandudey/rust-bitcoin-rpc.svg?branch=master" alt="Build Status">
     </img>
   </a>
 
   <a href="https://crates.io/crates/bitcoin-rpc">
-    <img src="https://img.shields.io/crates/l/bitcoin-rpc.svg" alt="LicenseLicense">
+    <img src="https://img.shields.io/crates/l/bitcoin-rpc.svg" alt="License">
     </img>
   </a>
 
