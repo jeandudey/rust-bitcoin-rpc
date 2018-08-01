@@ -11,5 +11,6 @@ extern crate serde;
 extern crate serde_derive;
 extern crate strason;
 
+pub mod blockchain;
 pub mod mining;
 pub mod net;

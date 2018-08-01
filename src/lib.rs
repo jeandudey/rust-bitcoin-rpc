@@ -18,8 +18,6 @@ extern crate failure;
 #[macro_use]
 extern crate failure_derive;
 
-use std::fmt::{self, Display, Formatter};
-
 use jsonrpc::client::Client;
 use strason::Json;
 
@@ -46,13 +44,30 @@ macro_rules! rpc_request {
 macro_rules! rpc_method {
     (
         $(#[$outer:meta])*
-        pub fn $rpc_method:ident(&self) -> RpcResult<$ty:ty>
+        pub fn $rpc_method:ident(&self) -> RpcResult<$ty:ty>;
     ) => {
-        $(#[$outer:meta])*
+        $(#[$outer])*
         pub fn $rpc_method(&self) -> $crate::RpcResult<$ty> {
             let v: $ty = rpc_request!(&self.client,
-                                        stringify!($rpc_method).to_string(),
-                                        vec![]);
+                                      stringify!($rpc_method).to_string(),
+                                      vec![]);
+            Ok(v)
+        }
+    };
+    (
+        $(#[$outer:meta])*
+        pub fn $rpc_method:ident(&self, $($param:ident : $pty:ty),+) -> RpcResult<$ty:ty>;
+    ) => {
+        $(#[$outer])*
+        pub fn $rpc_method(&self, $($param: $pty),+) -> $crate::RpcResult<$ty> {
+            let mut params = Vec::new();
+            $(
+                params.push(Json::from_serialize(&$param).unwrap());
+            )+
+
+            let v: $ty = rpc_request!(&self.client,
+                                      stringify!($rpc_method).to_string(),
+                                      params);
             Ok(v)
         }
     }
@@ -74,6 +89,51 @@ impl BitcoinRpc {
 
         BitcoinRpc { client: Client::new(url, user, pass) }
     }
+
+    // blockchain
+
+    rpc_method! {
+        /// Returns the numbers of block in the longest chain.
+        pub fn getblockcount(&self) -> RpcResult<u64>;
+    }
+
+    rpc_method! {
+        // TODO: Use Sha256dHash from rust-bitcoin
+        /// Returns the hash of the best (tip) block in the longest blockchain.
+        pub fn getbestblockhash(&self) -> RpcResult<String>;
+    }
+
+    rpc_method! {
+        /// Waits for a specific new block and returns useful info about it.
+        /// Returns the current block on timeout or exit.
+        ///
+        /// # Arguments
+        ///
+        /// 1. `timeout`: Time in milliseconds to wait for a response. 0
+        /// indicates no timeout.
+        pub fn waitfornewblock(
+            &self,
+            timeout: u64
+        ) -> RpcResult<blockchain::BlockRef>;
+    }
+
+    rpc_method! {
+        /// Waits for a specific new block and returns useful info about it.
+        /// Returns the current block on timeout or exit.
+        ///
+        /// # Arguments
+        ///
+        /// 1. `blockhash`: Block hash to wait for.
+        /// 2. `timeout`: Time in milliseconds to wait for a response. 0
+        /// indicates no timeout.
+        // TODO: Use Sha256dHash
+        pub fn waitforblock(
+            &self,
+            blockhash: String,
+            timeout: u64
+        ) -> RpcResult<blockchain::BlockRef>;
+    }
+
 
     // mining
 
@@ -99,9 +159,17 @@ impl BitcoinRpc {
 
     // net
     
-    rpc_method!(pub fn getconnectioncount(&self) -> RpcResult<u64>);
-    rpc_method!(pub fn ping(&self) -> RpcResult<()>);
-    rpc_method!(pub fn getnetworkinfo(&self) -> RpcResult<net::NetworkInfo>);
+    rpc_method! {
+        pub fn getconnectioncount(&self) -> RpcResult<u64>;
+    }
+
+    rpc_method! {
+        pub fn ping(&self) -> RpcResult<()>;
+    }
+
+    rpc_method! {
+        pub fn getnetworkinfo(&self) -> RpcResult<net::NetworkInfo>;
+    }
 }
 
 /// The error type for bitcoin JSON-RPC operations.
