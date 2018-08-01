@@ -5,12 +5,12 @@
   </a>
 
   <a href="https://crates.io/crates/bitcoin-rpc">
-    <img src="https://img.shields.io/crates/l/bitcoin-rpc.svg" alt="License">
+    <img src="https://img.shields.io/crates/l/bitcoin-rpc.svg?maxAge=86400" alt="License">
     </img>
   </a>
 
   <a href="https://crates.io/crates/bitcoin-rpc">
-    <img src="https://img.shields.io/crates/v/bitcoin-rpc.svg" alt="Crates.io Version">
+    <img src="https://img.shields.io/crates/v/bitcoin-rpc.svg?maxAge=86400" alt="Crates.io Version">
     </img>
   </a>
 
