@@ -14,6 +14,10 @@ extern crate strason;
 extern crate bitcoin;
 extern crate bitcoin_rpc_json;
 
+extern crate failure;
+#[macro_use]
+extern crate failure_derive;
+
 use std::fmt::{self, Display, Formatter};
 
 use jsonrpc::client::Client;
@@ -25,12 +29,16 @@ use bitcoin::util::hash::Sha256dHash;
 
 use bitcoin_rpc_json::*;
 
+use failure::ResultExt;
+
 macro_rules! rpc_request {
     ($client:expr, $name:expr, $params:expr) => {
         {
             let request = $client.build_request($name, $params);
-            $client.send_request(&request)
-                .map_err(|e| $crate::Error::new(e.into(), "RPC error"))?
+            let response = $client.send_request(&request)
+                .context(ErrorKind::BadResponse)?;
+            response.into_result()
+                .context(ErrorKind::MalformedResponse)?
         }
     }
 }
@@ -42,13 +50,9 @@ macro_rules! rpc_method {
     ) => {
         $(#[$outer:meta])*
         pub fn $rpc_method(&self) -> $crate::RpcResult<$ty> {
-            let response = rpc_request!(&self.client,
+            let v: $ty = rpc_request!(&self.client,
                                         stringify!($rpc_method).to_string(),
                                         vec![]);
-
-            let v: $ty = response.into_result()
-                .map_err(|e| $crate::Error::new(e.into(), "Malformed response"))?;
-
             Ok(v)
         }
     }
@@ -90,11 +94,7 @@ impl BitcoinRpc {
         let response = rpc_request!(&self.client,
                                     "estimatesmartfee".to_string(),
                                     params);
-
-        let v: mining::EstimateSmartFee = response.into_result()
-            .map_err(|e| Error::new(e.into(), "Malformed response"))?;
-
-        Ok(v)
+        Ok(response)
     }
 
     // net
@@ -102,82 +102,37 @@ impl BitcoinRpc {
     rpc_method!(pub fn getconnectioncount(&self) -> RpcResult<u64>);
     rpc_method!(pub fn ping(&self) -> RpcResult<()>);
     rpc_method!(pub fn getnetworkinfo(&self) -> RpcResult<net::NetworkInfo>);
-
-    // rawtransaction
-
-    pub fn sendrawtransaction<A>(
-        &self,
-        tx: &Transaction,
-        allowhighfees: A,
-    ) -> Result<Sha256dHash, Error>
-    where A:
-          Into<Option<bool>>
-    {
-        let rawtx = bitcoin_ser::serialize_hex(&tx).unwrap();
-
-        let mut params = Vec::new();
-        params.push(Json::from_serialize(rawtx).unwrap());
-        if let Some(allowhighfees) = allowhighfees.into() {
-            params.push(Json::from_serialize(allowhighfees).unwrap())
-        }
-
-        let response = rpc_request!(&self.client,
-                                    "sendrawtransaction".to_string(),
-                                    params);
-
-        let v: String = response.into_result()
-            .map_err(|e| Error::new(e.into(), "Malformed response"))?;
-        // TODO: unwrap
-        let v = Sha256dHash::from_hex(&*v).unwrap();
-
-        Ok(v)
-    }
 }
 
 /// The error type for bitcoin JSON-RPC operations.
 #[derive(Debug)]
 pub struct Error {
-    kind: ErrorKind,
-    desc: String,
+    kind: failure::Context<ErrorKind>,
 }
 
-impl Error {
-    fn new<D>(kind: ErrorKind, desc: D) -> Error
-    where
-        D: ToString,
-    {
+impl From<ErrorKind> for Error {
+    fn from(e: ErrorKind) -> Error {
         Error {
-            kind,
-            desc: desc.to_string(),
+            kind: failure::Context::new(e),
         }
     }
 }
 
-impl Display for Error {
-    fn fmt(&self, fmt: &mut Formatter) -> fmt::Result {
-        match self.kind {
-            ErrorKind::JsonRpc(ref e) => {
-                write!(fmt, "JSON-RPC error: {} ({})", self.desc, e)
-            },
-            ErrorKind::Daemon => write!(fmt, "bitcoind daemon error: {}", self.desc),
-            ErrorKind::Other => write!(fmt, "{}", self.desc),
+impl From<failure::Context<ErrorKind>> for Error {
+    fn from(e: failure::Context<ErrorKind>) -> Error {
+        Error {
+            kind: e,
         }
     }
 }
 
 /// The kind of error.
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Fail)]
 pub enum ErrorKind {
-    /// A JSON-RPC error.
-    JsonRpc(jsonrpc::Error),
-    /// The daemon failed to give a valid response.
-    Daemon,
-    /// Any other error.
-    Other,
-}
-
-impl From<jsonrpc::Error> for ErrorKind {
-    fn from(e: jsonrpc::Error) -> ErrorKind {
-        ErrorKind::JsonRpc(e)
-    }
+    /// The request resulted in an error.
+    #[fail(display = "Request resulted in an error")]
+    BadResponse,
+    /// The received response format is malformed.
+    #[fail(display = "Response format is invalid")]
+    MalformedResponse,
 }
