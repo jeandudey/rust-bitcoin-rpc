@@ -18,9 +18,9 @@ use strason::Json;
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct EstimateSmartFee {
     /// Estimate fee rate in BTC/kB.
-    pub feerate: Json,
+    pub feerate: Option<Json>,
     /// Errors encountered during processing.
-    pub errors: Vec<String>,
+    pub errors: Option<Vec<String>>,
     /// Block number where estimate was found.
     pub blocks: i64,
 }
