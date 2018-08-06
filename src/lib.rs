@@ -18,14 +18,23 @@ extern crate failure;
 #[macro_use]
 extern crate failure_derive;
 
+/// Blockchain related RPC result types.
+pub mod blockchain {
+    pub use bitcoin_rpc_json::blockchain::*;
+}
+
+/// Mining related RPC result types.
+pub mod mining {
+    pub use bitcoin_rpc_json::mining::*;
+}
+
+/// Network related RPC result types.
+pub mod net {
+    pub use bitcoin_rpc_json::net::*;
+}
+
 use jsonrpc::client::Client;
 use strason::Json;
-
-use bitcoin::blockdata::transaction::Transaction;
-use bitcoin::network::serialize as bitcoin_ser;
-use bitcoin::util::hash::Sha256dHash;
-
-use bitcoin_rpc_json::*;
 
 use failure::ResultExt;
 
@@ -160,11 +169,53 @@ impl BitcoinRpc {
     // net
     
     rpc_method! {
+        /// Returns the number of connections to other nodes.
         pub fn getconnectioncount(&self) -> RpcResult<u64>;
     }
 
     rpc_method! {
+        /// Requests that a ping be sent to all other nodes, to measure ping
+        /// time.
+        ///
+        /// Results provided in `getpeerinfo`, `pingtime` and `pingwait` fields
+        /// are decimal seconds.
+        ///
+        /// Ping command is handled in queue with all other commands, so it
+        /// measures processing backlog, not just network ping.
         pub fn ping(&self) -> RpcResult<()>;
+    }
+
+    rpc_method! {
+        /// Returns data about each connected network node as an array of
+        /// [`PeerInfo`][]
+        ///
+        /// [`PeerInfo`]: net/struct.PeerInfo.html
+        pub fn getpeerinfo(&self) -> RpcResult<Vec<net::PeerInfo>>;
+    }
+
+    rpc_method! {
+        /// Attempts to add or remove a node from the addnode list.
+        ///
+        /// Or try a connection to a node once.
+        ///
+        /// Nodes added using `addnode` (or `-connect`) are protected from DoS
+        /// disconnection and are not required to be full nodes/support SegWit
+        /// as other outbound peers are (though such peers will not be synced
+        /// from).
+        ///
+        /// # Arguments:
+        ///
+        /// 1. `node`: The node (see [`getpeerinfo`][] for nodes)
+        /// 2. `command`: `AddNode::Add` to add a node to the list,
+        /// `AddNode::Remove` to remove a node from the list, `AddNode::OneTry`
+        /// to try a connection to the node once
+        ///
+        /// [`getpeerinfo`]: #method.getpeerinfo
+        pub fn addnode(
+            &self,
+            node: &str,
+            commnad: net::AddNode
+        ) -> RpcResult<()>;
     }
 
     rpc_method! {
