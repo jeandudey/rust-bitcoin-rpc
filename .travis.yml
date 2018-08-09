@@ -90,9 +90,6 @@ script:
 
 after_script: set +e
 
-before_deploy:
-  - sh ci/before_deploy.sh
-
 deploy:
   # TODO update `api_key.secure`
   # - Create a `public_repo` GitHub token. Go to: https://github.com/settings/tokens/new
