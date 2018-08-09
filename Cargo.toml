@@ -20,7 +20,7 @@ serde = "1"
 strason = "0.4"
 
 bitcoin = "0.13"
-bitcoin-rpc-json = { version = "0.1", path = "json/" }
+bitcoin-rpc-json = { version = "0.2", path = "json/" }
 
 failure = "0.1"
 failure_derive = "0.1"
