@@ -143,6 +143,11 @@ impl BitcoinRpc {
         ) -> RpcResult<blockchain::BlockRef>;
     }
 
+    rpc_method! {
+        /// Returns a data structure containing various state info regarding
+        /// blockchain processing.
+        pub fn getblockchaininfo(&self) -> RpcResult<blockchain::BlockchainInfo>;
+    }
 
     // mining
 
