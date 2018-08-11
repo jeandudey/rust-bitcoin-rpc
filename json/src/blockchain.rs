@@ -1,11 +1,27 @@
 //! Blockchain related RPC result types.
 
+use bitcoin::util::hash::Sha256dHash;
 use strason::Json;
 
 /// Models the result of "waitfornewblock", and "waitforblock"
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone)]
 pub struct BlockRef {
-    // TODO: Use Sha256dHash
+    pub hash: Sha256dHash,
+    pub height: u64,
+}
+
+impl From<SerdeBlockRef> for BlockRef {
+    fn from(v: SerdeBlockRef) -> BlockRef {
+        BlockRef {
+            hash: Sha256dHash::from_hex(&v.hash).unwrap(),
+            height: v.height,
+        }
+    }
+}
+
+#[doc(hidden)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct SerdeBlockRef {
     pub hash: String,
     pub height: u64,
 }

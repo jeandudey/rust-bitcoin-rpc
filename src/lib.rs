@@ -20,16 +20,19 @@ extern crate failure_derive;
 
 /// Blockchain related RPC result types.
 pub mod blockchain {
+    #[doc(inline)]
     pub use bitcoin_rpc_json::blockchain::*;
 }
 
 /// Mining related RPC result types.
 pub mod mining {
+    #[doc(inline)]
     pub use bitcoin_rpc_json::mining::*;
 }
 
 /// Network related RPC result types.
 pub mod net {
+    #[doc(inline)]
     pub use bitcoin_rpc_json::net::*;
 }
 
@@ -37,6 +40,8 @@ use jsonrpc::client::Client;
 use strason::Json;
 
 use failure::ResultExt;
+
+use bitcoin::util::hash::Sha256dHash;
 
 macro_rules! rpc_request {
     ($client:expr, $name:expr, $params:expr) => {
@@ -79,7 +84,7 @@ macro_rules! rpc_method {
                                       params);
             Ok(v)
         }
-    }
+    };
 }
 
 pub type RpcResult<T> = Result<T, Error>;
@@ -106,41 +111,53 @@ impl BitcoinRpc {
         pub fn getblockcount(&self) -> RpcResult<u64>;
     }
 
-    rpc_method! {
-        // TODO: Use Sha256dHash from rust-bitcoin
-        /// Returns the hash of the best (tip) block in the longest blockchain.
-        pub fn getbestblockhash(&self) -> RpcResult<String>;
+    /// Returns the hash of the best (tip) block in the longest blockchain.
+    pub fn getbestblockhash(&self) -> RpcResult<String> {
+        let v: String = rpc_request!(&self.client,
+                                     "getbestblockhash".to_string(),
+                                      vec![]);
+        Ok(Sha256dHash::from_hex(v).unwrap())
     }
 
-    rpc_method! {
-        /// Waits for a specific new block and returns useful info about it.
-        /// Returns the current block on timeout or exit.
-        ///
-        /// # Arguments
-        ///
-        /// 1. `timeout`: Time in milliseconds to wait for a response. 0
-        /// indicates no timeout.
-        pub fn waitfornewblock(
-            &self,
-            timeout: u64
-        ) -> RpcResult<blockchain::BlockRef>;
+    /// Waits for a specific new block and returns useful info about it.
+    /// Returns the current block on timeout or exit.
+    ///
+    /// # Arguments
+    ///
+    /// 1. `timeout`: Time in milliseconds to wait for a response. 0
+    /// indicates no timeout.
+    pub fn waitfornewblock(
+        &self,
+        timeout: u64,
+    ) -> RpcResult<blockchain::BlockRef> {
+        let params = vec![Json::from_serialize(timeout).unwrap()];
+
+        let v: blockchain::SerdeBlockRef = rpc_request!(&self.client,
+                                                        "waitfornewblock".to_string(),
+                                                        params);
+        Ok(v.into())
     }
 
-    rpc_method! {
-        /// Waits for a specific new block and returns useful info about it.
-        /// Returns the current block on timeout or exit.
-        ///
-        /// # Arguments
-        ///
-        /// 1. `blockhash`: Block hash to wait for.
-        /// 2. `timeout`: Time in milliseconds to wait for a response. 0
-        /// indicates no timeout.
-        // TODO: Use Sha256dHash
-        pub fn waitforblock(
-            &self,
-            blockhash: String,
-            timeout: u64
-        ) -> RpcResult<blockchain::BlockRef>;
+    /// Waits for a specific new block and returns useful info about it.
+    /// Returns the current block on timeout or exit.
+    ///
+    /// # Arguments
+    ///
+    /// 1. `blockhash`: Block hash to wait for.
+    /// 2. `timeout`: Time in milliseconds to wait for a response. 0
+    /// indicates no timeout.
+    pub fn waitforblock(
+        &self,
+        blockhash: String,
+        timeout: u64,
+    ) -> RpcResult<blockchain::BlockRef> {
+        let params = vec![Json::from_serialize(blockhash).unwrap(),
+                          Json::from_serialize(timeout).unwrap()];
+
+        let v: blockchain::SerdeBlockRef = rpc_request!(&self.client,
+                                                        "waitforblock".to_string(),
+                                                        params);
+        Ok(v.into())
     }
 
     rpc_method! {

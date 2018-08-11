@@ -18,7 +18,6 @@ travis-ci = { repository = "jeandudey/rust-bitcoin-rpc", branch = "master" }
 jsonrpc = "0.9"
 serde = "1"
 strason = "0.4"
-
 bitcoin = "0.13"
 bitcoin-rpc-json = { version = "0.2", path = "json/" }
 
