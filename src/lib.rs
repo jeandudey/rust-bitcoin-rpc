@@ -112,11 +112,11 @@ impl BitcoinRpc {
     }
 
     /// Returns the hash of the best (tip) block in the longest blockchain.
-    pub fn getbestblockhash(&self) -> RpcResult<String> {
+    pub fn getbestblockhash(&self) -> RpcResult<Sha256dHash> {
         let v: String = rpc_request!(&self.client,
                                      "getbestblockhash".to_string(),
                                       vec![]);
-        Ok(Sha256dHash::from_hex(v).unwrap())
+        Ok(Sha256dHash::from_hex(&v).unwrap())
     }
 
     /// Waits for a specific new block and returns useful info about it.
