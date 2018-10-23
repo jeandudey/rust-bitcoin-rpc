@@ -189,7 +189,7 @@ impl BitcoinRpc {
     }
 
     // net
-    
+
     rpc_method! {
         /// Returns the number of connections to other nodes.
         pub fn getconnectioncount(&self) -> RpcResult<u64>;
@@ -242,6 +242,72 @@ impl BitcoinRpc {
 
     rpc_method! {
         pub fn getnetworkinfo(&self) -> RpcResult<net::NetworkInfo>;
+    }
+
+    /// Mark a block as invalid by `block_hash`
+    pub fn invalidate_block(&self, block_hash: &Sha256dHash) -> RpcResult<()> {
+        let v: () = rpc_request!(
+            &self.client,
+            "invalidateblock".to_string(),
+            vec![block_hash.to_string().into()]
+        );
+        Ok(v)
+    }
+
+    /// Get the hex-consensus-encoded block by `block_hash`
+    pub fn get_block(&self, block_hash: &Sha256dHash) -> RpcResult<String> {
+        let v: String = rpc_request!(
+            &self.client,
+            "getblock".to_string(),
+            vec![block_hash.to_string().into(), "0".into()]
+        );
+        Ok(v)
+    }
+
+    /// Generate new address under own control
+    pub fn get_new_address(&self, account: String) -> RpcResult<String> {
+        let v: String = rpc_request!(
+            &self.client,
+            "getnewaddress".to_string(),
+            vec![account.into()]
+        );
+        Ok(v)
+    }
+
+    /// Dump private key of an `address`
+    pub fn dump_priv_key(&self, address: String) -> RpcResult<String> {
+        let v: String = rpc_request!(
+            &self.client,
+            "dumpprivkey".to_string(),
+            vec![address.into()]
+        );
+        Ok(v)
+    }
+
+    /// Mine `block_num` blocks and pay coinbase to `address`
+    ///
+    /// Returns hashes of the generated blocks
+    pub fn generate_to_address(&self, block_num: u64, address: String) -> RpcResult<Vec<Sha256dHash>> {
+        let v : Vec<String> = rpc_request!(
+            &self.client,
+            "generatetoaddress".to_string(),
+            vec![block_num.into(), address.into()]
+        );
+
+
+        Ok(v.into_iter().map(|v| Sha256dHash::from_hex(&v).unwrap()).collect())
+    }
+
+
+    /// Get block hash at a given height
+    pub fn get_blockhash(&self, height: u64) -> RpcResult<Sha256dHash> {
+        let v: String = rpc_request!(
+            &self.client,
+            "getblockhash".to_string(),
+            vec![height.into()]
+        );
+
+        Ok(Sha256dHash::from_hex(&v).unwrap())
     }
 }
 
