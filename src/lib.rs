@@ -310,7 +310,8 @@ impl BitcoinRpc {
 }
 
 /// The error type for bitcoin JSON-RPC operations.
-#[derive(Debug)]
+#[derive(Debug, Fail)]
+#[fail(display = "BitcoinRpc error")]
 pub struct Error {
     kind: failure::Context<ErrorKind>,
 }
