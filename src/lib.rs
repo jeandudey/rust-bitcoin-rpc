@@ -257,7 +257,7 @@ impl BitcoinRpc {
         let v: String = rpc_request!(
             &self.client,
             "getblock".to_string(),
-            vec![block_hash.to_string().into(), "0".into()]
+            vec![block_hash.to_string().into(), 0.into()]
         );
         Ok(v)
     }
