@@ -244,12 +244,12 @@ impl BitcoinRpc {
 
     /// Mark a block as invalid by `block_hash`
     pub fn invalidate_block(&self, block_hash: &Sha256dHash) -> RpcResult<()> {
-        let v: () = rpc_request!(
+        rpc_request_no_res!(
             &self.client,
             "invalidateblock".to_string(),
             vec![block_hash.to_string().into()]
         );
-        Ok(v)
+        Ok(())
     }
 
     /// Get the hex-consensus-encoded block by `block_hash`
@@ -307,7 +307,59 @@ impl BitcoinRpc {
 
         Ok(Sha256dHash::from_hex(&v).unwrap())
     }
+
+
+    pub fn create_raw_transaction(
+        &self,
+        ins: &[self::blockchain::TxInInfoCreateTx],
+        outs: &std::collections::HashMap<AddressString, BalanceFloat>,
+        ) -> RpcResult<RawTxString> {
+
+        let v : String = rpc_request!(
+            &self.client,
+            "createrawtransaction".to_string(),
+            vec![
+                Json::from_serialize(ins).unwrap(),
+                Json::from_serialize(outs).unwrap(),
+            ]
+        );
+
+        Ok(v)
+    }
+
+    pub fn sign_raw_transaction(
+        &self,
+        unsigned: RawTxString,
+        ins: &[self::blockchain::TxInInfoSignTx],
+        privkeys: &[PrivkeyString],
+        ) -> RpcResult<self::blockchain::SignedRawTransaction> {
+        let v: self::blockchain::SignedRawTransaction = rpc_request!(
+            &self.client,
+            "signrawtransaction".to_string(),
+            vec![
+                unsigned.into(),
+                Json::from_serialize(ins).unwrap(),
+                Json::from_serialize(privkeys).unwrap(),
+            ]
+        );
+        Ok(v)
+    }
+
+    pub fn send_raw_transaction(&mut self, tx: RawTransactionString) -> RpcResult<RawTxString> {
+        let v: String = rpc_request!(
+            &self.client,
+            "sendrawtransaction".to_string(),
+            vec![tx.into()]
+        );
+        Ok(v)
+    }
 }
+
+pub type RawTransactionString = String;
+pub type AddressString = String;
+pub type PrivkeyString = String;
+pub type BalanceFloat = f64;
+pub type RawTxString = String;
 
 /// The error type for bitcoin JSON-RPC operations.
 #[derive(Debug, Fail)]

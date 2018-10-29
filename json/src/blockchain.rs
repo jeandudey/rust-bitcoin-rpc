@@ -85,3 +85,34 @@ pub struct RejectStatus {
     /// `true` if threshold reached
     pub status: bool,
 }
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct TxInInfoSignTx {
+    #[serde(rename = "txid")]
+    pub tx_id: String,
+    pub vout: u32,
+    #[serde(rename = "scriptPubKey")]
+    pub script_pub_key_hex: String,
+    #[serde(rename = "redeemScript")]
+    pub redeem_script_hex: String,
+    #[serde(rename = "amount")]
+    pub amount: f64
+}
+
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct TxInInfoCreateTx {
+    #[serde(rename = "txid")]
+    pub tx_id: String,
+    pub vout: u32,
+    #[serde(rename = "scriptPubKey")]
+    pub script_pub_key_hex: String,
+}
+
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct SignedRawTransaction {
+    pub hex: String,
+    pub complete: bool,
+}
+
