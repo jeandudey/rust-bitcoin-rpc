@@ -9,7 +9,7 @@
 extern crate jsonrpc;
 
 extern crate serde;
-extern crate strason;
+extern crate serde_json;
 
 extern crate bitcoin;
 extern crate bitcoin_rpc_json;
@@ -37,8 +37,6 @@ pub mod net {
 }
 
 use jsonrpc::client::Client;
-use strason::Json;
-
 use failure::ResultExt;
 
 use bitcoin::util::hash::Sha256dHash;
@@ -76,7 +74,7 @@ macro_rules! rpc_method {
         pub fn $rpc_method(&self, $($param: $pty),+) -> $crate::RpcResult<$ty> {
             let mut params = Vec::new();
             $(
-                params.push(Json::from_serialize(&$param).unwrap());
+                params.push(serde_json::to_value(&$param).unwrap());
             )+
 
             let v: $ty = rpc_request!(&self.client,
@@ -130,7 +128,7 @@ impl BitcoinRpc {
         &self,
         timeout: u64,
     ) -> RpcResult<blockchain::BlockRef> {
-        let params = vec![Json::from_serialize(timeout).unwrap()];
+        let params = vec![serde_json::to_value(timeout).unwrap()];
 
         let v: blockchain::SerdeBlockRef = rpc_request!(&self.client,
                                                         "waitfornewblock".to_string(),
@@ -151,8 +149,8 @@ impl BitcoinRpc {
         blockhash: String,
         timeout: u64,
     ) -> RpcResult<blockchain::BlockRef> {
-        let params = vec![Json::from_serialize(blockhash).unwrap(),
-                          Json::from_serialize(timeout).unwrap()];
+        let params = vec![serde_json::to_value(blockhash).unwrap(),
+                          serde_json::to_value(timeout).unwrap()];
 
         let v: blockchain::SerdeBlockRef = rpc_request!(&self.client,
                                                         "waitforblock".to_string(),
@@ -177,9 +175,9 @@ impl BitcoinRpc {
           Into<Option<mining::EstimateMode>>
     {
         let mut params = Vec::new();
-        params.push(Json::from_serialize(conf_target).unwrap());
+        params.push(serde_json::to_value(conf_target).unwrap());
         if let Some(estimate_mode) = estimate_mode.into() {
-            params.push(Json::from_serialize(estimate_mode).unwrap())
+            params.push(serde_json::to_value(estimate_mode).unwrap())
         }
 
         let response = rpc_request!(&self.client,
@@ -189,7 +187,7 @@ impl BitcoinRpc {
     }
 
     // net
-    
+
     rpc_method! {
         /// Returns the number of connections to other nodes.
         pub fn getconnectioncount(&self) -> RpcResult<u64>;
