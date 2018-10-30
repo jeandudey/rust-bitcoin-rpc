@@ -244,7 +244,7 @@ impl BitcoinRpc {
 
     /// Mark a block as invalid by `block_hash`
     pub fn invalidate_block(&self, block_hash: &Sha256dHash) -> RpcResult<()> {
-        rpc_request_no_res!(
+        rpc_request!(
             &self.client,
             "invalidateblock".to_string(),
             vec![block_hash.to_string().into()]
@@ -319,8 +319,8 @@ impl BitcoinRpc {
             &self.client,
             "createrawtransaction".to_string(),
             vec![
-                Json::from_serialize(ins).unwrap(),
-                Json::from_serialize(outs).unwrap(),
+                serde_json::to_value(ins).unwrap(),
+                serde_json::to_value(outs).unwrap(),
             ]
         );
 
@@ -338,8 +338,8 @@ impl BitcoinRpc {
             "signrawtransaction".to_string(),
             vec![
                 unsigned.into(),
-                Json::from_serialize(ins).unwrap(),
-                Json::from_serialize(privkeys).unwrap(),
+                serde_json::to_value(ins).unwrap(),
+                serde_json::to_value(privkeys).unwrap(),
             ]
         );
         Ok(v)
