@@ -68,6 +68,35 @@ pub struct BlockchainInfo {
     pub warnings: String,
 }
 
+/// Models the result of "getblockchaininfo"
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct BlockInfo {
+    hash: String,
+    confirmations: u64,
+    #[serde(rename = "strippedsize")]
+    stripped_size: u64,
+    size: u64,
+    weight: u64,
+    height: u64,
+    version: u64,
+    #[serde(rename = "versionHex")]
+    version_hex: String,
+    #[serde(rename = "merkleroot")]
+    merkle_root: String,
+    tx: Vec<String>,
+    time: u64,
+    #[serde(rename = "mediantime")]
+    median_time: u64,
+    nonce: u64,
+    bits: String,
+    difficulty: f64,
+    chainwork: String,
+    #[serde(rename = "nTx")]
+    n_tx: u32,
+    previousblockhash: String,
+    nextblockhash: String,
+}
+
 /// Status of a softfork
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Softfork {

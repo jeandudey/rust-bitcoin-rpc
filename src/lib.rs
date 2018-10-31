@@ -262,6 +262,16 @@ impl BitcoinRpc {
         Ok(v)
     }
 
+    /// Get block by `block_hash`
+    pub fn get_block_verbose(&self, block_hash: &Sha256dHash) -> RpcResult<blockchain::BlockInfo> {
+        let v: blockchain::BlockInfo = rpc_request!(
+            &self.client,
+            "getblock".to_string(),
+            vec![block_hash.to_string().into(), 1.into()]
+        );
+        Ok(v)
+    }
+
     /// Generate new address under own control
     pub fn get_new_address(&self, account: String) -> RpcResult<String> {
         let v: String = rpc_request!(
