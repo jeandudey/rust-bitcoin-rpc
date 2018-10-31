@@ -125,9 +125,8 @@ pub struct TxInInfoSignTx {
     #[serde(rename = "redeemScript")]
     pub redeem_script_hex: String,
     #[serde(rename = "amount")]
-    pub amount: f64
+    pub amount: f64,
 }
-
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct TxInInfoCreateTx {
@@ -138,10 +137,8 @@ pub struct TxInInfoCreateTx {
     pub script_pub_key_hex: String,
 }
 
-
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct SignedRawTransaction {
     pub hex: String,
     pub complete: bool,
 }
-

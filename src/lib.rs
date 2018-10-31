@@ -36,21 +36,21 @@ pub mod net {
     pub use bitcoin_rpc_json::net::*;
 }
 
-use jsonrpc::client::Client;
 use failure::ResultExt;
+use jsonrpc::client::Client;
 
 use bitcoin::util::hash::Sha256dHash;
 
 macro_rules! rpc_request {
-    ($client:expr, $name:expr, $params:expr) => {
-        {
-            let request = $client.build_request($name, $params);
-            let response = $client.send_request(&request)
-                .context(ErrorKind::BadResponse)?;
-            response.into_result()
-                .context(ErrorKind::MalformedResponse)?
-        }
-    }
+    ($client:expr, $name:expr, $params:expr) => {{
+        let request = $client.build_request($name, $params);
+        let response = $client
+            .send_request(&request)
+            .context(ErrorKind::BadResponse)?;
+        response
+            .into_result()
+            .context(ErrorKind::MalformedResponse)?
+    }};
 }
 
 macro_rules! rpc_method {
@@ -99,7 +99,9 @@ impl BitcoinRpc {
         // around is ok.
         debug_assert!(pass.is_none() || user.is_some());
 
-        BitcoinRpc { client: Client::new(url, user, pass) }
+        BitcoinRpc {
+            client: Client::new(url, user, pass),
+        }
     }
 
     // blockchain
@@ -111,9 +113,7 @@ impl BitcoinRpc {
 
     /// Returns the hash of the best (tip) block in the longest blockchain.
     pub fn getbestblockhash(&self) -> RpcResult<Sha256dHash> {
-        let v: String = rpc_request!(&self.client,
-                                     "getbestblockhash".to_string(),
-                                      vec![]);
+        let v: String = rpc_request!(&self.client, "getbestblockhash".to_string(), vec![]);
         Ok(Sha256dHash::from_hex(&v).unwrap())
     }
 
@@ -124,15 +124,11 @@ impl BitcoinRpc {
     ///
     /// 1. `timeout`: Time in milliseconds to wait for a response. 0
     /// indicates no timeout.
-    pub fn waitfornewblock(
-        &self,
-        timeout: u64,
-    ) -> RpcResult<blockchain::BlockRef> {
+    pub fn waitfornewblock(&self, timeout: u64) -> RpcResult<blockchain::BlockRef> {
         let params = vec![serde_json::to_value(timeout).unwrap()];
 
-        let v: blockchain::SerdeBlockRef = rpc_request!(&self.client,
-                                                        "waitfornewblock".to_string(),
-                                                        params);
+        let v: blockchain::SerdeBlockRef =
+            rpc_request!(&self.client, "waitfornewblock".to_string(), params);
         Ok(v.into())
     }
 
@@ -144,17 +140,14 @@ impl BitcoinRpc {
     /// 1. `blockhash`: Block hash to wait for.
     /// 2. `timeout`: Time in milliseconds to wait for a response. 0
     /// indicates no timeout.
-    pub fn waitforblock(
-        &self,
-        blockhash: String,
-        timeout: u64,
-    ) -> RpcResult<blockchain::BlockRef> {
-        let params = vec![serde_json::to_value(blockhash).unwrap(),
-                          serde_json::to_value(timeout).unwrap()];
+    pub fn waitforblock(&self, blockhash: String, timeout: u64) -> RpcResult<blockchain::BlockRef> {
+        let params = vec![
+            serde_json::to_value(blockhash).unwrap(),
+            serde_json::to_value(timeout).unwrap(),
+        ];
 
-        let v: blockchain::SerdeBlockRef = rpc_request!(&self.client,
-                                                        "waitforblock".to_string(),
-                                                        params);
+        let v: blockchain::SerdeBlockRef =
+            rpc_request!(&self.client, "waitforblock".to_string(), params);
         Ok(v.into())
     }
 
@@ -171,8 +164,8 @@ impl BitcoinRpc {
         conf_target: u16,
         estimate_mode: E,
     ) -> Result<mining::EstimateSmartFee, Error>
-    where E:
-          Into<Option<mining::EstimateMode>>
+    where
+        E: Into<Option<mining::EstimateMode>>,
     {
         let mut params = Vec::new();
         params.push(serde_json::to_value(conf_target).unwrap());
@@ -180,9 +173,7 @@ impl BitcoinRpc {
             params.push(serde_json::to_value(estimate_mode).unwrap())
         }
 
-        let response = rpc_request!(&self.client,
-                                    "estimatesmartfee".to_string(),
-                                    params);
+        let response = rpc_request!(&self.client, "estimatesmartfee".to_string(), params);
         Ok(response)
     }
 
@@ -295,17 +286,21 @@ impl BitcoinRpc {
     /// Mine `block_num` blocks and pay coinbase to `address`
     ///
     /// Returns hashes of the generated blocks
-    pub fn generate_to_address(&self, block_num: u64, address: String) -> RpcResult<Vec<Sha256dHash>> {
-        let v : Vec<String> = rpc_request!(
+    pub fn generate_to_address(
+        &self,
+        block_num: u64,
+        address: String,
+    ) -> RpcResult<Vec<Sha256dHash>> {
+        let v: Vec<String> = rpc_request!(
             &self.client,
             "generatetoaddress".to_string(),
             vec![block_num.into(), address.into()]
         );
 
-
-        Ok(v.into_iter().map(|v| Sha256dHash::from_hex(&v).unwrap()).collect())
+        Ok(v.into_iter()
+            .map(|v| Sha256dHash::from_hex(&v).unwrap())
+            .collect())
     }
-
 
     /// Get block hash at a given height
     pub fn get_blockhash(&self, height: u64) -> RpcResult<Sha256dHash> {
@@ -318,14 +313,12 @@ impl BitcoinRpc {
         Ok(Sha256dHash::from_hex(&v).unwrap())
     }
 
-
     pub fn create_raw_transaction(
         &self,
         ins: &[self::blockchain::TxInInfoCreateTx],
         outs: &std::collections::HashMap<AddressString, BalanceFloat>,
-        ) -> RpcResult<RawTxString> {
-
-        let v : String = rpc_request!(
+    ) -> RpcResult<RawTxString> {
+        let v: String = rpc_request!(
             &self.client,
             "createrawtransaction".to_string(),
             vec![
@@ -342,7 +335,7 @@ impl BitcoinRpc {
         unsigned: RawTxString,
         ins: &[self::blockchain::TxInInfoSignTx],
         privkeys: &[PrivkeyString],
-        ) -> RpcResult<self::blockchain::SignedRawTransaction> {
+    ) -> RpcResult<self::blockchain::SignedRawTransaction> {
         let v: self::blockchain::SignedRawTransaction = rpc_request!(
             &self.client,
             "signrawtransaction".to_string(),
@@ -360,6 +353,16 @@ impl BitcoinRpc {
             &self.client,
             "sendrawtransaction".to_string(),
             vec![tx.into()]
+        );
+        Ok(v)
+    }
+
+    /// Get the hex-consensus-encoded transaction by `txid`
+    pub fn get_raw_transaction(&self, hash: &Sha256dHash) -> RpcResult<String> {
+        let v: String = rpc_request!(
+            &self.client,
+            "getrawtransaction".to_string(),
+            vec![hash.to_string().into(), 0.into()]
         );
         Ok(v)
     }
@@ -388,9 +391,7 @@ impl From<ErrorKind> for Error {
 
 impl From<failure::Context<ErrorKind>> for Error {
     fn from(e: failure::Context<ErrorKind>) -> Error {
-        Error {
-            kind: e,
-        }
+        Error { kind: e }
     }
 }
 
