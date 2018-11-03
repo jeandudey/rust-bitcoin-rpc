@@ -48,6 +48,10 @@ macro_rules! rpc_request {
     }};
 }
 
+fn sha256dhash_from_str(rpc_name: &'static str, hex: &str) -> RpcResult<Sha256dHash> {
+    Ok(Sha256dHash::from_hex(&hex).map_err(|_e| Error::MalformedResponse { rpc_name })?)
+}
+
 macro_rules! rpc_method {
     (
         $(#[$outer:meta])*
@@ -123,7 +127,7 @@ impl BitcoinRpc {
     /// Returns the hash of the best (tip) block in the longest blockchain.
     pub fn getbestblockhash(&self) -> RpcResult<Sha256dHash> {
         let v: String = rpc_request!(&self.client, "getbestblockhash", vec![]);
-        Ok(Sha256dHash::from_hex(&v).unwrap())
+        sha256dhash_from_str("getbestblockhash", &v)
     }
 
     /// Waits for a specific new block and returns useful info about it.
@@ -292,14 +296,14 @@ impl BitcoinRpc {
         );
 
         Ok(v.into_iter()
-            .map(|v| Sha256dHash::from_hex(&v).unwrap())
-            .collect())
+            .map(|v| sha256dhash_from_str("generatetoaddress", &v))
+            .collect::<RpcResult<Vec<Sha256dHash>>>()?)
     }
 
     /// Get block hash at a given height
     pub fn get_blockhash(&self, height: u64) -> RpcResult<Sha256dHash> {
         let hex_string: String = self.do_rpc("getblockhash", vec![height.into()])?;
-        Ok(Sha256dHash::from_hex(&hex_string).unwrap())
+        sha256dhash_from_str("getblockhash", &hex_string)
     }
 
     pub fn create_raw_transaction(
