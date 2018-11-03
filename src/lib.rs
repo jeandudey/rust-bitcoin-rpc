@@ -104,6 +104,24 @@ impl BitcoinRpc {
         }
     }
 
+    pub fn do_rpc<T: for<'a> serde::de::Deserialize<'a>>(
+        &self,
+        rpc_name: &str,
+        args: Vec<serde_json::value::Value>,
+    ) -> RpcResult<T> {
+        let request = self.client.build_request(rpc_name.to_string(), args);
+        let response = self
+            .client
+            .send_request(&request)
+            .context(ErrorKind::BadResponse)?;
+
+        Ok(response
+            .clone()
+            .into_result()
+            .with_context(|e| format!("{}; response: {:?}", e, response))
+            .context(ErrorKind::MalformedResponse)?)
+    }
+
     // blockchain
 
     rpc_method! {
@@ -245,12 +263,7 @@ impl BitcoinRpc {
 
     /// Get the hex-consensus-encoded block by `block_hash`
     pub fn get_block(&self, block_hash: &Sha256dHash) -> RpcResult<String> {
-        let v: String = rpc_request!(
-            &self.client,
-            "getblock".to_string(),
-            vec![block_hash.to_string().into(), 0.into()]
-        );
-        Ok(v)
+        self.do_rpc("getblock", vec![block_hash.to_string().into(), 0.into()])
     }
 
     /// Get block by `block_hash`
@@ -304,13 +317,8 @@ impl BitcoinRpc {
 
     /// Get block hash at a given height
     pub fn get_blockhash(&self, height: u64) -> RpcResult<Sha256dHash> {
-        let v: String = rpc_request!(
-            &self.client,
-            "getblockhash".to_string(),
-            vec![height.into()]
-        );
-
-        Ok(Sha256dHash::from_hex(&v).unwrap())
+        let hex_string: String = self.do_rpc("getblockhash", vec![height.into()])?;
+        Ok(Sha256dHash::from_hex(&hex_string).unwrap())
     }
 
     pub fn create_raw_transaction(
