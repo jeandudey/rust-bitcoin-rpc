@@ -36,20 +36,15 @@ pub mod net {
     pub use bitcoin_rpc_json::net::*;
 }
 
-use failure::ResultExt;
 use jsonrpc::client::Client;
 
 use bitcoin::util::hash::Sha256dHash;
 
 macro_rules! rpc_request {
     ($client:expr, $name:expr, $params:expr) => {{
-        let request = $client.build_request($name, $params);
-        let response = $client
-            .send_request(&request)
-            .context(ErrorKind::BadResponse)?;
-        response
-            .into_result()
-            .context(ErrorKind::MalformedResponse)?
+        let request = $client.build_request($name.to_string(), $params);
+        let response = $client.send_request(&request).map_err(|e| ($name, e))?;
+        response.into_result().map_err(|e| ($name, e))?
     }};
 }
 
@@ -61,7 +56,7 @@ macro_rules! rpc_method {
         $(#[$outer])*
         pub fn $rpc_method(&self) -> $crate::RpcResult<$ty> {
             let v: $ty = rpc_request!(&self.client,
-                                      stringify!($rpc_method).to_string(),
+                                      stringify!($rpc_method),
                                       vec![]);
             Ok(v)
         }
@@ -78,7 +73,7 @@ macro_rules! rpc_method {
             )+
 
             let v: $ty = rpc_request!(&self.client,
-                                      stringify!($rpc_method).to_string(),
+                                      stringify!($rpc_method),
                                       params);
             Ok(v)
         }
@@ -106,20 +101,16 @@ impl BitcoinRpc {
 
     pub fn do_rpc<T: for<'a> serde::de::Deserialize<'a>>(
         &self,
-        rpc_name: &str,
+        rpc_name: &'static str,
         args: Vec<serde_json::value::Value>,
     ) -> RpcResult<T> {
         let request = self.client.build_request(rpc_name.to_string(), args);
         let response = self
             .client
             .send_request(&request)
-            .context(ErrorKind::BadResponse)?;
+            .map_err(|e| (rpc_name, e))?;
 
-        Ok(response
-            .clone()
-            .into_result()
-            .with_context(|e| format!("{}; response: {:?}", e, response))
-            .context(ErrorKind::MalformedResponse)?)
+        Ok(response.clone().into_result().map_err(|e| (rpc_name, e))?)
     }
 
     // blockchain
@@ -131,7 +122,7 @@ impl BitcoinRpc {
 
     /// Returns the hash of the best (tip) block in the longest blockchain.
     pub fn getbestblockhash(&self) -> RpcResult<Sha256dHash> {
-        let v: String = rpc_request!(&self.client, "getbestblockhash".to_string(), vec![]);
+        let v: String = rpc_request!(&self.client, "getbestblockhash", vec![]);
         Ok(Sha256dHash::from_hex(&v).unwrap())
     }
 
@@ -145,8 +136,7 @@ impl BitcoinRpc {
     pub fn waitfornewblock(&self, timeout: u64) -> RpcResult<blockchain::BlockRef> {
         let params = vec![serde_json::to_value(timeout).unwrap()];
 
-        let v: blockchain::SerdeBlockRef =
-            rpc_request!(&self.client, "waitfornewblock".to_string(), params);
+        let v: blockchain::SerdeBlockRef = rpc_request!(&self.client, "waitfornewblock", params);
         Ok(v.into())
     }
 
@@ -164,8 +154,7 @@ impl BitcoinRpc {
             serde_json::to_value(timeout).unwrap(),
         ];
 
-        let v: blockchain::SerdeBlockRef =
-            rpc_request!(&self.client, "waitforblock".to_string(), params);
+        let v: blockchain::SerdeBlockRef = rpc_request!(&self.client, "waitforblock", params);
         Ok(v.into())
     }
 
@@ -191,7 +180,7 @@ impl BitcoinRpc {
             params.push(serde_json::to_value(estimate_mode).unwrap())
         }
 
-        let response = rpc_request!(&self.client, "estimatesmartfee".to_string(), params);
+        let response = rpc_request!(&self.client, "estimatesmartfee", params);
         Ok(response)
     }
 
@@ -255,7 +244,7 @@ impl BitcoinRpc {
     pub fn invalidate_block(&self, block_hash: &Sha256dHash) -> RpcResult<()> {
         rpc_request!(
             &self.client,
-            "invalidateblock".to_string(),
+            "invalidateblock",
             vec![block_hash.to_string().into()]
         );
         Ok(())
@@ -270,7 +259,7 @@ impl BitcoinRpc {
     pub fn get_block_verbose(&self, block_hash: &Sha256dHash) -> RpcResult<blockchain::BlockInfo> {
         let v: blockchain::BlockInfo = rpc_request!(
             &self.client,
-            "getblock".to_string(),
+            "getblock",
             vec![block_hash.to_string().into(), 1.into()]
         );
         Ok(v)
@@ -278,21 +267,13 @@ impl BitcoinRpc {
 
     /// Generate new address under own control
     pub fn get_new_address(&self, account: String) -> RpcResult<String> {
-        let v: String = rpc_request!(
-            &self.client,
-            "getnewaddress".to_string(),
-            vec![account.into()]
-        );
+        let v: String = rpc_request!(&self.client, "getnewaddress", vec![account.into()]);
         Ok(v)
     }
 
     /// Dump private key of an `address`
     pub fn dump_priv_key(&self, address: String) -> RpcResult<String> {
-        let v: String = rpc_request!(
-            &self.client,
-            "dumpprivkey".to_string(),
-            vec![address.into()]
-        );
+        let v: String = rpc_request!(&self.client, "dumpprivkey", vec![address.into()]);
         Ok(v)
     }
 
@@ -306,7 +287,7 @@ impl BitcoinRpc {
     ) -> RpcResult<Vec<Sha256dHash>> {
         let v: Vec<String> = rpc_request!(
             &self.client,
-            "generatetoaddress".to_string(),
+            "generatetoaddress",
             vec![block_num.into(), address.into()]
         );
 
@@ -328,7 +309,7 @@ impl BitcoinRpc {
     ) -> RpcResult<RawTxString> {
         let v: String = rpc_request!(
             &self.client,
-            "createrawtransaction".to_string(),
+            "createrawtransaction",
             vec![
                 serde_json::to_value(ins).unwrap(),
                 serde_json::to_value(outs).unwrap(),
@@ -346,7 +327,7 @@ impl BitcoinRpc {
     ) -> RpcResult<self::blockchain::SignedRawTransaction> {
         let v: self::blockchain::SignedRawTransaction = rpc_request!(
             &self.client,
-            "signrawtransaction".to_string(),
+            "signrawtransaction",
             vec![
                 unsigned.into(),
                 serde_json::to_value(ins).unwrap(),
@@ -357,11 +338,7 @@ impl BitcoinRpc {
     }
 
     pub fn send_raw_transaction(&mut self, tx: RawTransactionString) -> RpcResult<RawTxString> {
-        let v: String = rpc_request!(
-            &self.client,
-            "sendrawtransaction".to_string(),
-            vec![tx.into()]
-        );
+        let v: String = rpc_request!(&self.client, "sendrawtransaction", vec![tx.into()]);
         Ok(v)
     }
 
@@ -369,7 +346,7 @@ impl BitcoinRpc {
     pub fn get_raw_transaction(&self, hash: &Sha256dHash) -> RpcResult<String> {
         let v: String = rpc_request!(
             &self.client,
-            "getrawtransaction".to_string(),
+            "getrawtransaction",
             vec![hash.to_string().into(), 0.into()]
         );
         Ok(v)
@@ -382,34 +359,26 @@ pub type PrivkeyString = String;
 pub type BalanceFloat = f64;
 pub type RawTxString = String;
 
-/// The error type for bitcoin JSON-RPC operations.
-#[derive(Debug, Fail)]
-#[fail(display = "BitcoinRpc error")]
-pub struct Error {
-    kind: failure::Context<ErrorKind>,
-}
-
-impl From<ErrorKind> for Error {
-    fn from(e: ErrorKind) -> Error {
-        Error {
-            kind: failure::Context::new(e),
+impl From<(&'static str, jsonrpc::Error)> for Error {
+    fn from(e: (&'static str, jsonrpc::Error)) -> Error {
+        Error::JsonRpc {
+            rpc_name: e.0,
+            err: e.1,
         }
     }
 }
 
-impl From<failure::Context<ErrorKind>> for Error {
-    fn from(e: failure::Context<ErrorKind>) -> Error {
-        Error { kind: e }
-    }
-}
-
-/// The kind of error.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Fail)]
-pub enum ErrorKind {
+/// The error type
+#[derive(Debug, Fail)]
+pub enum Error {
     /// The request resulted in an error.
-    #[fail(display = "Request resulted in an error")]
-    BadResponse,
+    #[fail(display = "JsonRpc {} failed", rpc_name)]
+    JsonRpc {
+        rpc_name: &'static str,
+        #[cause]
+        err: jsonrpc::Error,
+    },
     /// The received response format is malformed.
-    #[fail(display = "Response format is invalid")]
-    MalformedResponse,
+    #[fail(display = "JsonRpc {} response format is invalid", rpc_name)]
+    MalformedResponse { rpc_name: &'static str },
 }
