@@ -96,13 +96,10 @@ impl BitcoinRpc {
         rpc_name: &'static str,
         args: &[serde_json::value::Value],
     ) -> RpcResult<T> {
-        let request = self.client.build_request(rpc_name, args);
-        let response = self
+        Ok(self
             .client
-            .send_request(&request)
-            .map_err(|e| (rpc_name, e))?;
-
-        Ok(response.clone().into_result().map_err(|e| (rpc_name, e))?)
+            .do_rpc(rpc_name, args)
+            .map_err(|e| (rpc_name, e))?)
     }
 
     // blockchain
