@@ -51,7 +51,7 @@ macro_rules! rpc_method {
     ) => {
         $(#[$outer])*
         pub fn $rpc_method(&self) -> $crate::RpcResult<$ty> {
-            let v: $ty = self.do_rpc(stringify!($rpc_method), vec![])?;
+            let v: $ty = self.do_rpc(stringify!($rpc_method), &[])?;
             Ok(v)
         }
     };
@@ -66,7 +66,7 @@ macro_rules! rpc_method {
                 params.push(serde_json::to_value(&$param).unwrap());
             )+
 
-            let v: $ty = self.do_rpc(stringify!($rpc_method), params)?;
+            let v: $ty = self.do_rpc(stringify!($rpc_method), &params)?;
             Ok(v)
         }
     };
@@ -94,9 +94,9 @@ impl BitcoinRpc {
     pub fn do_rpc<T: for<'a> serde::de::Deserialize<'a>>(
         &self,
         rpc_name: &'static str,
-        args: Vec<serde_json::value::Value>,
+        args: &[serde_json::value::Value],
     ) -> RpcResult<T> {
-        let request = self.client.build_request(rpc_name.to_string(), args);
+        let request = self.client.build_request(rpc_name, args);
         let response = self
             .client
             .send_request(&request)
@@ -114,7 +114,7 @@ impl BitcoinRpc {
 
     /// Returns the hash of the best (tip) block in the longest blockchain.
     pub fn getbestblockhash(&self) -> RpcResult<Sha256dHash> {
-        let v: String = self.do_rpc("getbestblockhash", vec![])?;
+        let v: String = self.do_rpc("getbestblockhash", &[])?;
         sha256dhash_from_str("getbestblockhash", &v)
     }
 
@@ -128,7 +128,7 @@ impl BitcoinRpc {
     pub fn waitfornewblock(&self, timeout: u64) -> RpcResult<blockchain::BlockRef> {
         let params = vec![serde_json::to_value(timeout).unwrap()];
 
-        let v: blockchain::SerdeBlockRef = self.do_rpc("waitfornewblock", params)?;
+        let v: blockchain::SerdeBlockRef = self.do_rpc("waitfornewblock", &params)?;
         Ok(v.into())
     }
 
@@ -146,7 +146,7 @@ impl BitcoinRpc {
             serde_json::to_value(timeout).unwrap(),
         ];
 
-        let v: blockchain::SerdeBlockRef = self.do_rpc("waitforblock", params)?;
+        let v: blockchain::SerdeBlockRef = self.do_rpc("waitforblock", &params)?;
         Ok(v.into())
     }
 
@@ -172,7 +172,7 @@ impl BitcoinRpc {
             params.push(serde_json::to_value(estimate_mode).unwrap())
         }
 
-        let response = self.do_rpc("estimatesmartfee", params)?;
+        let response = self.do_rpc("estimatesmartfee", &params)?;
         Ok(response)
     }
 
@@ -234,27 +234,27 @@ impl BitcoinRpc {
 
     /// Mark a block as invalid by `block_hash`
     pub fn invalidate_block(&self, block_hash: &Sha256dHash) -> RpcResult<()> {
-        self.do_rpc("invalidateblock", vec![block_hash.to_string().into()])
+        self.do_rpc("invalidateblock", &[block_hash.to_string().into()])
     }
 
     /// Get the hex-consensus-encoded block by `block_hash`
     pub fn get_block(&self, block_hash: &Sha256dHash) -> RpcResult<String> {
-        self.do_rpc("getblock", vec![block_hash.to_string().into(), 0.into()])
+        self.do_rpc("getblock", &[block_hash.to_string().into(), 0.into()])
     }
 
     /// Get block by `block_hash`
     pub fn get_block_verbose(&self, block_hash: &Sha256dHash) -> RpcResult<blockchain::BlockInfo> {
-        self.do_rpc("getblock", vec![block_hash.to_string().into(), 1.into()])
+        self.do_rpc("getblock", &[block_hash.to_string().into(), 1.into()])
     }
 
     /// Generate new address under own control
     pub fn get_new_address(&self, account: String) -> RpcResult<String> {
-        self.do_rpc("getnewaddress", vec![account.into()])
+        self.do_rpc("getnewaddress", &[account.into()])
     }
 
     /// Dump private key of an `address`
     pub fn dump_priv_key(&self, address: String) -> RpcResult<String> {
-        self.do_rpc("dumpprivkey", vec![address.into()])
+        self.do_rpc("dumpprivkey", &[address.into()])
     }
 
     /// Mine `block_num` blocks and pay coinbase to `address`
@@ -266,7 +266,7 @@ impl BitcoinRpc {
         address: String,
     ) -> RpcResult<Vec<Sha256dHash>> {
         let v: Vec<String> =
-            self.do_rpc("generatetoaddress", vec![block_num.into(), address.into()])?;
+            self.do_rpc("generatetoaddress", &[block_num.into(), address.into()])?;
 
         Ok(v.into_iter()
             .map(|v| sha256dhash_from_str("generatetoaddress", &v))
@@ -275,7 +275,7 @@ impl BitcoinRpc {
 
     /// Get block hash at a given height
     pub fn get_blockhash(&self, height: u64) -> RpcResult<Sha256dHash> {
-        let hex_string: String = self.do_rpc("getblockhash", vec![height.into()])?;
+        let hex_string: String = self.do_rpc("getblockhash", &[height.into()])?;
         sha256dhash_from_str("getblockhash", &hex_string)
     }
 
@@ -286,7 +286,7 @@ impl BitcoinRpc {
     ) -> RpcResult<RawTxString> {
         self.do_rpc(
             "createrawtransaction",
-            vec![
+            &[
                 serde_json::to_value(ins).unwrap(),
                 serde_json::to_value(outs).unwrap(),
             ],
@@ -301,7 +301,7 @@ impl BitcoinRpc {
     ) -> RpcResult<self::blockchain::SignedRawTransaction> {
         self.do_rpc(
             "signrawtransaction",
-            vec![
+            &[
                 unsigned.into(),
                 serde_json::to_value(ins).unwrap(),
                 serde_json::to_value(privkeys).unwrap(),
@@ -310,12 +310,12 @@ impl BitcoinRpc {
     }
 
     pub fn send_raw_transaction(&mut self, tx: RawTransactionString) -> RpcResult<RawTxString> {
-        self.do_rpc("sendrawtransaction", vec![tx.into()])
+        self.do_rpc("sendrawtransaction", &[tx.into()])
     }
 
     /// Get the hex-consensus-encoded transaction by `txid`
     pub fn get_raw_transaction(&self, hash: &Sha256dHash) -> RpcResult<String> {
-        self.do_rpc("getrawtransaction", vec![hash.to_string().into(), 0.into()])
+        self.do_rpc("getrawtransaction", &[hash.to_string().into(), 0.into()])
     }
 }
 
