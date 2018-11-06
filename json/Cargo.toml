@@ -19,4 +19,4 @@ serde = "1"
 serde_derive = "1"
 strason = "0.4"
 
-bitcoin = "0.13"
+bitcoin = "0.14"
