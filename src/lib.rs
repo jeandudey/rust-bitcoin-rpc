@@ -88,34 +88,6 @@ impl Querable for bitcoin::blockdata::transaction::Transaction {
     }
 }
 
-macro_rules! rpc_method {
-    (
-        $(#[$outer:meta])*
-        pub fn $rpc_method:ident(&self) -> RpcResult<$ty:ty>;
-    ) => {
-        $(#[$outer])*
-        pub fn $rpc_method(&self) -> $crate::RpcResult<$ty> {
-            let v: $ty = self.do_rpc(stringify!($rpc_method), &[])?;
-            Ok(v)
-        }
-    };
-    (
-        $(#[$outer:meta])*
-        pub fn $rpc_method:ident(&self, $($param:ident : $pty:ty),+) -> RpcResult<$ty:ty>;
-    ) => {
-        $(#[$outer])*
-        pub fn $rpc_method(&self, $($param: $pty),+) -> $crate::RpcResult<$ty> {
-            let mut params = Vec::new();
-            $(
-                params.push(serde_json::to_value(&$param).unwrap());
-            )+
-
-            let v: $ty = self.do_rpc(stringify!($rpc_method), &params)?;
-            Ok(v)
-        }
-    };
-}
-
 pub type RpcResult<T> = Result<T, Error>;
 
 /// A Handle to a Bitcoin JSON-RPC connection
@@ -153,9 +125,9 @@ impl BitcoinRpc {
 
     // blockchain
 
-    rpc_method! {
-        /// Returns the numbers of block in the longest chain.
-        pub fn getblockcount(&self) -> RpcResult<u64>;
+    /// Returns the numbers of block in the longest chain.
+    pub fn getblockcount(&self) -> RpcResult<u64> {
+        self.do_rpc("getblockcount", &[])
     }
 
     /// Returns the hash of the best (tip) block in the longest blockchain.
@@ -196,10 +168,10 @@ impl BitcoinRpc {
         Ok(v.into())
     }
 
-    rpc_method! {
-        /// Returns a data structure containing various state info regarding
-        /// blockchain processing.
-        pub fn getblockchaininfo(&self) -> RpcResult<blockchain::BlockchainInfo>;
+    /// Returns a data structure containing various state info regarding
+    /// blockchain processing.
+    pub fn getblockchaininfo(&self) -> RpcResult<blockchain::BlockchainInfo> {
+        self.do_rpc("getblockchaininfo", &[])
     }
 
     // mining
@@ -224,58 +196,57 @@ impl BitcoinRpc {
 
     // net
 
-    rpc_method! {
-        /// Returns the number of connections to other nodes.
-        pub fn getconnectioncount(&self) -> RpcResult<u64>;
+    /// Returns the number of connections to other nodes.
+    pub fn getconnectioncount(&self) -> RpcResult<u64> {
+        self.do_rpc("getconnectioncount", &[])
     }
 
-    rpc_method! {
-        /// Requests that a ping be sent to all other nodes, to measure ping
-        /// time.
-        ///
-        /// Results provided in `getpeerinfo`, `pingtime` and `pingwait` fields
-        /// are decimal seconds.
-        ///
-        /// Ping command is handled in queue with all other commands, so it
-        /// measures processing backlog, not just network ping.
-        pub fn ping(&self) -> RpcResult<()>;
+    /// Requests that a ping be sent to all other nodes, to measure ping
+    /// time.
+    ///
+    /// Results provided in `getpeerinfo`, `pingtime` and `pingwait` fields
+    /// are decimal seconds.
+    ///
+    /// Ping command is handled in queue with all other commands, so it
+    /// measures processing backlog, not just network ping.
+    pub fn ping(&self) -> RpcResult<()> {
+        self.do_rpc("ping", &[])
     }
 
-    rpc_method! {
-        /// Returns data about each connected network node as an array of
-        /// [`PeerInfo`][]
-        ///
-        /// [`PeerInfo`]: net/struct.PeerInfo.html
-        pub fn getpeerinfo(&self) -> RpcResult<Vec<net::PeerInfo>>;
+    /// Returns data about each connected network node as an array of
+    /// [`PeerInfo`][]
+    ///
+    /// [`PeerInfo`]: net/struct.PeerInfo.html
+    pub fn getpeerinfo(&self) -> RpcResult<Vec<net::PeerInfo>> {
+        self.do_rpc("getpeerinfo", &[])
     }
 
-    rpc_method! {
-        /// Attempts to add or remove a node from the addnode list.
-        ///
-        /// Or try a connection to a node once.
-        ///
-        /// Nodes added using `addnode` (or `-connect`) are protected from DoS
-        /// disconnection and are not required to be full nodes/support SegWit
-        /// as other outbound peers are (though such peers will not be synced
-        /// from).
-        ///
-        /// # Arguments:
-        ///
-        /// 1. `node`: The node (see [`getpeerinfo`][] for nodes)
-        /// 2. `command`: `AddNode::Add` to add a node to the list,
-        /// `AddNode::Remove` to remove a node from the list, `AddNode::OneTry`
-        /// to try a connection to the node once
-        ///
-        /// [`getpeerinfo`]: #method.getpeerinfo
-        pub fn addnode(
-            &self,
-            node: &str,
-            commnad: net::AddNode
-        ) -> RpcResult<()>;
+    /// Attempts to add or remove a node from the addnode list.
+    ///
+    /// Or try a connection to a node once.
+    ///
+    /// Nodes added using `addnode` (or `-connect`) are protected from DoS
+    /// disconnection and are not required to be full nodes/support SegWit
+    /// as other outbound peers are (though such peers will not be synced
+    /// from).
+    ///
+    /// # Arguments:
+    ///
+    /// 1. `node`: The node (see [`getpeerinfo`][] for nodes)
+    /// 2. `command`: `AddNode::Add` to add a node to the list,
+    /// `AddNode::Remove` to remove a node from the list, `AddNode::OneTry`
+    /// to try a connection to the node once
+    ///
+    /// [`getpeerinfo`]: #method.getpeerinfo
+    pub fn addnode(&self, node: &str, command: net::AddNode) -> RpcResult<()> {
+        self.do_rpc(
+            "addnode",
+            &[node.into(), serde_json::to_value(command).unwrap()],
+        )
     }
 
-    rpc_method! {
-        pub fn getnetworkinfo(&self) -> RpcResult<net::NetworkInfo>;
+    pub fn getnetworkinfo(&self) -> RpcResult<net::NetworkInfo> {
+        self.do_rpc("getnetworkinfo", &[])
     }
 
     /// Mark a block as invalid by `block_hash`
