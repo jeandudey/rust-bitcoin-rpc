@@ -44,6 +44,50 @@ fn sha256dhash_from_str(rpc_name: &'static str, hex: &str) -> RpcResult<Sha256dH
     Ok(Sha256dHash::from_hex(&hex).map_err(|_e| Error::MalformedResponse { rpc_name })?)
 }
 
+/// A type that can be used as an id when querying for `Querable`
+// TODO: Unnecessary? Always `Sha256dHash`? --dpc
+pub trait Id {
+    fn to_json_value(&self) -> serde_json::value::Value;
+}
+
+impl Id for Sha256dHash {
+    fn to_json_value(&self) -> serde_json::value::Value {
+        self.to_string().into()
+    }
+}
+
+/// A type that can be queried from the Node
+pub trait Querable: Sized {
+    /// Type of the id used to query the item
+    type Id: Id;
+    /// Query the item using `rpc` and convert to `Self`
+    fn query(rpc: &BitcoinRpc, id: &Self::Id) -> RpcResult<Self>;
+}
+
+impl Querable for bitcoin::blockdata::block::Block {
+    type Id = Sha256dHash;
+
+    fn query(rpc: &BitcoinRpc, id: &Self::Id) -> RpcResult<Self> {
+        let rpc_name = "getblock";
+        let hex: String = rpc.do_rpc(rpc_name, &[id.to_json_value(), 0.into()])?;
+        let bytes = bitcoin::util::misc::hex_bytes(&hex)
+            .map_err(|_e| Error::MalformedResponse { rpc_name })?;
+        Ok(bitcoin::network::serialize::deserialize(&bytes).map_err(|e| (rpc_name, e))?)
+    }
+}
+
+impl Querable for bitcoin::blockdata::transaction::Transaction {
+    type Id = Sha256dHash;
+
+    fn query(rpc: &BitcoinRpc, id: &Self::Id) -> RpcResult<Self> {
+        let rpc_name = "getrawtransaction";
+        let hex: String = rpc.do_rpc(rpc_name, &[id.to_json_value()])?;
+        let bytes = bitcoin::util::misc::hex_bytes(&hex)
+            .map_err(|_e| Error::MalformedResponse { rpc_name })?;
+        Ok(bitcoin::network::serialize::deserialize(&bytes).map_err(|e| (rpc_name, e))?)
+    }
+}
+
 macro_rules! rpc_method {
     (
         $(#[$outer:meta])*
@@ -100,6 +144,11 @@ impl BitcoinRpc {
             .client
             .do_rpc(rpc_name, args)
             .map_err(|e| (rpc_name, e))?)
+    }
+
+    /// Query an object implementing `Querable` type
+    pub fn get<T: Querable>(&self, id: &<T as Querable>::Id) -> RpcResult<T> {
+        T::query(self, &id)
     }
 
     // blockchain
@@ -331,6 +380,11 @@ impl From<(&'static str, jsonrpc::Error)> for Error {
     }
 }
 
+impl From<(&'static str, bitcoin::network::serialize::Error)> for Error {
+    fn from(e: (&'static str, bitcoin::network::serialize::Error)) -> Error {
+        Error::MalformedResponse { rpc_name: e.0 }
+    }
+}
 /// The error type
 #[derive(Debug, Fail)]
 pub enum Error {
