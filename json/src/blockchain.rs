@@ -31,22 +31,22 @@ pub struct SerdeBlockRef {
 pub struct BlockchainInfo {
     // TODO: Use Network from rust-bitcoin
     /// Current network name as defined in BIP70 (main, test, regtest)
-    pub chain: String, 
+    pub chain: String,
     /// The current number of blocks processed in the server
     pub blocks: u64,
     /// The current number of headers we have validated
     pub headers: u64,
     // TODO: Use Sha256dHash from rust-bitcoin
     /// The hash of the currently best block
-    pub bestblockhash: String, 
+    pub bestblockhash: String,
     /// The current difficulty
-    pub difficulty: u64, 
+    pub difficulty: f64,
     /// Median time for the current best block
-    pub mediantime: u64, 
+    pub mediantime: u64,
     /// Estimate of verification progress [0..1]
-    pub verificationprogress: f64, 
+    pub verificationprogress: f64,
     /// Estimate of whether this node is in Initial Block Download mode
-    pub initialblockdownload: bool, 
+    pub initialblockdownload: bool,
     /// Total amount of work in active chain, in hexadecimal
     pub chainwork: String,
     /// The estimated size of the block and undo files on disk
@@ -54,11 +54,11 @@ pub struct BlockchainInfo {
     /// If the blocks are subject to pruning
     pub pruned: bool,
     /// Lowest-height complete block stored (only present if pruning is enabled)
-    pub pruneheight: u64,
+    pub pruneheight: Option<u64>,
     /// Whether automatic pruning is enabled (only present if pruning is enabled)
-    pub automatic_pruning: bool, 
+    pub automatic_pruning: Option<bool>,
     /// The target size used by pruning (only present if automatic pruning is enabled)
-    pub prune_target_size: u64, 
+    pub prune_target_size: Option<u64>,
     /// Status of softforks in progress
     pub softforks: Vec<Softfork>,
     // TODO: add a type?
@@ -66,6 +66,35 @@ pub struct BlockchainInfo {
     pub bip9_softforks: Json,
     /// Any network and blockchain warnings.
     pub warnings: String,
+}
+
+/// Models the result of "getblockchaininfo"
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct BlockInfo {
+    hash: String,
+    confirmations: u64,
+    #[serde(rename = "strippedsize")]
+    stripped_size: u64,
+    size: u64,
+    weight: u64,
+    height: u64,
+    version: u64,
+    #[serde(rename = "versionHex")]
+    version_hex: String,
+    #[serde(rename = "merkleroot")]
+    merkle_root: String,
+    tx: Vec<String>,
+    time: u64,
+    #[serde(rename = "mediantime")]
+    median_time: u64,
+    nonce: u64,
+    bits: String,
+    difficulty: f64,
+    chainwork: String,
+    #[serde(rename = "nTx")]
+    n_tx: u32,
+    previousblockhash: String,
+    nextblockhash: String,
 }
 
 /// Status of a softfork
@@ -84,4 +113,32 @@ pub struct Softfork {
 pub struct RejectStatus {
     /// `true` if threshold reached
     pub status: bool,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct TxInInfoSignTx {
+    #[serde(rename = "txid")]
+    pub tx_id: String,
+    pub vout: u32,
+    #[serde(rename = "scriptPubKey")]
+    pub script_pub_key_hex: String,
+    #[serde(rename = "redeemScript")]
+    pub redeem_script_hex: String,
+    #[serde(rename = "amount")]
+    pub amount: f64,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct TxInInfoCreateTx {
+    #[serde(rename = "txid")]
+    pub tx_id: String,
+    pub vout: u32,
+    #[serde(rename = "scriptPubKey")]
+    pub script_pub_key_hex: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct SignedRawTransaction {
+    pub hex: String,
+    pub complete: bool,
 }
